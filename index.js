@@ -18,12 +18,11 @@ import { DisTube } from "distube";
 import { joinVoiceChannel } from "@discordjs/voice";
 
 // ====== متغيرات من Railway ======
-const TOKEN = process.env.TOKEN;        // التوكن
-const CLIENT_ID = process.env.CLIENT_ID; // ايدي البوت
-const GUILD_ID = process.env.GUILD_ID;   // ايدي السيرفر
-// =================================
+const TOKEN = process.env.TOKEN;
+const CLIENT_ID = process.env.CLIENT_ID;
+const GUILD_ID = process.env.GUILD_ID;
 
-// تشغيل العميل
+// ====== تشغيل العميل ======
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -33,7 +32,7 @@ const client = new Client({
   ]
 });
 
-// مكتبة DisTube لتشغيل الموسيقى
+// ====== مكتبة DisTube ======
 const distube = new DisTube(client, {
   searchSongs: 5,
   emitNewSongOnly: true,
@@ -41,7 +40,7 @@ const distube = new DisTube(client, {
   leaveOnStop: true
 });
 
-// تسجيل أمر السلاش
+// ====== تسجيل أمر السلاش ======
 const commands = [
   new SlashCommandBuilder()
     .setName("setmenu1")
@@ -66,7 +65,7 @@ client.once("ready", () => {
   console.log(`✅ ${client.user.tag} شغال!`);
 });
 
-// أمر /setmenu1
+// ====== أمر /setmenu1 ======
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -99,40 +98,25 @@ client.on("interactionCreate", async interaction => {
     );
 
     const row2 = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("volDown")
-        .setLabel("🔉")
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId("prev")
-        .setLabel("⏮️")
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId("playpause")
-        .setLabel("⏯️")
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setCustomId("stop")
-        .setLabel("⏹️")
-        .setStyle(ButtonStyle.Danger),
-      new ButtonBuilder()
-        .setCustomId("next")
-        .setLabel("⏭️")
-        .setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder()
-        .setCustomId("volUp")
-        .setLabel("🔊")
-        .setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder().setCustomId("volDown").setLabel("🔉").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("prev").setLabel("⏮️").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("playpause").setLabel("⏯️").setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId("stop").setLabel("⏹️").setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId("next").setLabel("⏭️").setStyle(ButtonStyle.Secondary)
+    );
+
+    const row3 = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId("volUp").setLabel("🔊").setStyle(ButtonStyle.Secondary)
     );
 
     await interaction.reply({
       embeds: [embed],
-      components: [row1, row2]
+      components: [row1, row2, row3]
     });
   }
 });
 
-// الأزرار
+// ====== التعامل مع الأزرار ======
 client.on("interactionCreate", async interaction => {
   if (!interaction.isButton()) return;
 
@@ -214,7 +198,7 @@ client.on("interactionCreate", async interaction => {
   }
 });
 
-// المودال للبحث
+// ====== المودال للبحث ======
 client.on("interactionCreate", async interaction => {
   if (interaction.type !== InteractionType.ModalSubmit) return;
   if (interaction.customId === "searchModal") {
