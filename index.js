@@ -1,223 +1,80 @@
-import {
-  Client,
-  GatewayIntentBits,
-  SlashCommandBuilder,
-  Routes,
-  REST,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  InteractionType
-} from "discord.js";
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
+const { DisTube } = require("distube");
+const { YtDlpPlugin } = require("@distube/yt-dlp");
+require("dotenv").config();
 
-import { DisTube } from "distube";
-import { YtDlpPlugin } from "@distube/yt-dlp";
-
-// ====== متغيرات من Railway ======
-const TOKEN = process.env.TOKEN;
-const CLIENT_ID = process.env.CLIENT_ID;
-const GUILD_ID = process.env.GUILD_ID;
-
-// ====== تشغيل العميل ======
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.MessageContent
   ]
 });
 
-// ====== مكتبة DisTube ======
 const distube = new DisTube(client, {
-  searchSongs: 5,
-  emitNewSongOnly: true,
   leaveOnEmpty: true,
-  leaveOnStop: true,
-  plugins: [new YtDlpPlugin()] // مهم عشان يشغل يوتيوب
+  leaveOnFinish: true,
+  emitNewSongOnly: true,
+  plugins: [new YtDlpPlugin()]
 });
-
-// ====== تسجيل أمر السلاش ======
-const commands = [
-  new SlashCommandBuilder()
-    .setName("setmenu1")
-    .setDescription("إرسال لوحة تحكم البوت")
-].map(cmd => cmd.toJSON());
-
-const rest = new REST({ version: "10" }).setToken(TOKEN);
-
-(async () => {
-  try {
-    console.log("🔄 جاري تسجيل أوامر السلاش...");
-    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
-      body: commands
-    });
-    console.log("✅ تم تسجيل الأوامر بنجاح");
-  } catch (err) {
-    console.error(err);
-  }
-})();
 
 client.once("ready", () => {
-  console.log(`✅ ${client.user.tag} شغال!`);
+  console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-// ====== أمر /setmenu1 ======
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+// /setmenu1
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isChatInputCommand() && !interaction.isButton()) return;
 
-  if (interaction.commandName === "setmenu1") {
+  // أمر القائمة
+  if (interaction.isChatInputCommand() && interaction.commandName === "setmenu1") {
     const embed = new EmbedBuilder()
-      .setTitle("🎶 لوحة تحكم الموسيقى")
-      .setDescription("تحكم في تشغيل الأغاني والفيديوهات من هنا")
+      .setTitle("🎶 لوحة تحكم البوت")
+      .setDescription("اختر من الأزرار بالأسفل للتحكم")
       .setColor("Blue");
 
-    const row1 = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("search")
-        .setLabel("🔎 بحث يوتيوب")
-        .setStyle(ButtonStyle.Primary),
-
-      new ButtonBuilder()
-        .setLabel("رائد المطيري 👑")
-        .setStyle(ButtonStyle.Link)
-        .setURL("https://discord.com/users/1079022798523093032"),
-
-      new ButtonBuilder()
-        .setCustomId("leave")
-        .setLabel("🚪 خروج")
-        .setStyle(ButtonStyle.Danger)
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId("join").setLabel("🎧 دخول").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId("leave").setLabel("❌ خروج").setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId("pause").setLabel("⏸️ إيقاف").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId("resume").setLabel("▶️ تشغيل").setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId("skip").setLabel("⏭️ تخطي").setStyle(ButtonStyle.Secondary)
     );
 
-    const row2 = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("volDown").setLabel("🔉").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId("prev").setLabel("⏮️").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId("playpause").setLabel("⏯️").setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId("stop").setLabel("⏹️").setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId("next").setLabel("⏭️").setStyle(ButtonStyle.Secondary)
-    );
-
-    const row3 = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("volUp").setLabel("🔊").setStyle(ButtonStyle.Secondary)
-    );
-
-    await interaction.reply({
-      embeds: [embed],
-      components: [row1, row2, row3]
-    });
-  }
-});
-
-// ====== التعامل مع الأزرار ======
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isButton()) return;
-
-  const vc = interaction.member.voice.channel;
-  if (!vc) {
-    return interaction.reply({
-      content: "🎙️ لازم تكون في روم صوتي أول",
-      ephemeral: true
-    });
+    await interaction.reply({ embeds: [embed], components: [row] });
   }
 
-  const queue = distube.getQueue(interaction.guild.id);
+  // الأزرار
+  if (interaction.isButton()) {
+    const voiceChannel = interaction.member.voice.channel;
+    if (!voiceChannel) return interaction.reply({ content: "⚠️ لازم تدخل روم صوتي أول", ephemeral: true });
 
-  switch (interaction.customId) {
-    case "search":
-      const modal = new ModalBuilder()
-        .setCustomId("searchModal")
-        .setTitle("🔎 بحث يوتيوب");
-      const input = new TextInputBuilder()
-        .setCustomId("song")
-        .setLabel("اكتب اسم أو رابط الأغنية")
-        .setStyle(TextInputStyle.Short);
-      modal.addComponents(new ActionRowBuilder().addComponents(input));
-      await interaction.showModal(modal);
-      break;
-
-    case "volDown":
-      if (!queue) return interaction.reply({ content: "❌ ما في شي يشتغل", ephemeral: true });
-      queue.setVolume(queue.volume - 10);
-      interaction.reply({ content: "🔉 قللت الصوت", ephemeral: true });
-      break;
-
-    case "volUp":
-      if (!queue) return interaction.reply({ content: "❌ ما في شي يشتغل", ephemeral: true });
-      queue.setVolume(queue.volume + 10);
-      interaction.reply({ content: "🔊 رفعت الصوت", ephemeral: true });
-      break;
-
-    case "playpause":
-      if (!queue) return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
-      if (queue.paused) {
-        queue.resume();
-        interaction.reply({ content: "▶️ تشغيل", ephemeral: true });
-      } else {
-        queue.pause();
-        interaction.reply({ content: "⏸️ إيقاف مؤقت", ephemeral: true });
+    try {
+      if (interaction.customId === "join") {
+        return interaction.reply({ content: "✅ دخلت الروم الصوتي", ephemeral: true });
       }
-      break;
-
-    case "stop":
-      if (!queue) return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
-      queue.stop();
-      interaction.reply({ content: "⏹️ أوقفت التشغيل", ephemeral: true });
-      break;
-
-    case "next":
-      if (!queue) return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
-      queue.skip();
-      interaction.reply({ content: "⏭️ تخطيت للأغنية التالية", ephemeral: true });
-      break;
-
-    case "prev":
-      if (!queue) return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
-      queue.previous();
-      interaction.reply({ content: "⏮️ رجعت للأغنية السابقة", ephemeral: true });
-      break;
-
-    case "leave":
-      queue?.stop();
-      distube.voices.get(interaction)?.leave();
-      interaction.reply({ content: "🚪 خرجت من الروم", ephemeral: true });
-      break;
+      if (interaction.customId === "leave") {
+        distube.voices.leave(interaction.guild);
+        return interaction.reply({ content: "👋 طلعت من الروم", ephemeral: true });
+      }
+      if (interaction.customId === "pause") {
+        distube.pause(interaction);
+        return interaction.reply({ content: "⏸️ تم الإيقاف", ephemeral: true });
+      }
+      if (interaction.customId === "resume") {
+        distube.resume(interaction);
+        return interaction.reply({ content: "▶️ تم التشغيل", ephemeral: true });
+      }
+      if (interaction.customId === "skip") {
+        distube.skip(interaction);
+        return interaction.reply({ content: "⏭️ تخطيت الأغنية", ephemeral: true });
+      }
+    } catch (err) {
+      console.error(err);
+      interaction.reply({ content: "❌ صار خطأ", ephemeral: true });
+    }
   }
 });
 
-// ====== المودال للبحث ======
-client.on("interactionCreate", async interaction => {
-  if (interaction.type !== InteractionType.ModalSubmit) return;
-  if (interaction.customId === "searchModal") {
-    const query = interaction.fields.getTextInputValue("song");
-    const vc = interaction.member.voice.channel;
-    if (!vc)
-      return interaction.reply({
-        content: "🎙️ لازم تكون في روم",
-        ephemeral: true
-      });
-
-    await distube.play(vc, query, {
-      member: interaction.member,
-      textChannel: interaction.channel
-    });
-    await interaction.reply({
-      content: `🔎 شغلت: ${query}`,
-      ephemeral: true
-    });
-  }
-});
-
-// ====== أحداث DisTube ======
-distube.on("playSong", (queue, song) => {
-  queue.textChannel?.send(`▶️ شغال: **${song.name}** - \`${song.formattedDuration}\``);
-});
-
-distube.on("addSong", (queue, song) => {
-  queue.textChannel?.send(`➕ أضفت: **${song.name}** - \`${song.formattedDuration}\``);
-});
-
-client.login(TOKEN);
+client.login(process.env.DISCORD_TOKEN);
