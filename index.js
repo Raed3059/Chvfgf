@@ -15,7 +15,7 @@ import {
 } from "discord.js";
 
 import { DisTube } from "distube";
-import { joinVoiceChannel } from "@discordjs/voice";
+import { YtDlpPlugin } from "@distube/yt-dlp";
 
 // ====== متغيرات من Railway ======
 const TOKEN = process.env.TOKEN;
@@ -37,7 +37,8 @@ const distube = new DisTube(client, {
   searchSongs: 5,
   emitNewSongOnly: true,
   leaveOnEmpty: true,
-  leaveOnStop: true
+  leaveOnStop: true,
+  plugins: [new YtDlpPlugin()] // مهم عشان يشغل يوتيوب
 });
 
 // ====== تسجيل أمر السلاش ======
@@ -76,11 +77,6 @@ client.on("interactionCreate", async interaction => {
       .setColor("Blue");
 
     const row1 = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("join")
-        .setLabel("🎙️ دخول البوت")
-        .setStyle(ButtonStyle.Success),
-
       new ButtonBuilder()
         .setCustomId("search")
         .setLabel("🔎 بحث يوتيوب")
@@ -121,26 +117,16 @@ client.on("interactionCreate", async interaction => {
   if (!interaction.isButton()) return;
 
   const vc = interaction.member.voice.channel;
-  if (!vc && interaction.customId !== "dev") {
+  if (!vc) {
     return interaction.reply({
       content: "🎙️ لازم تكون في روم صوتي أول",
       ephemeral: true
     });
   }
 
-  switch (interaction.customId) {
-    case "join":
-      joinVoiceChannel({
-        channelId: vc.id,
-        guildId: interaction.guild.id,
-        adapterCreator: interaction.guild.voiceAdapterCreator
-      });
-      interaction.reply({
-        content: `✅ دخلت روم: ${vc.name}`,
-        ephemeral: true
-      });
-      break;
+  const queue = distube.getQueue(interaction.guild.id);
 
+  switch (interaction.customId) {
     case "search":
       const modal = new ModalBuilder()
         .setCustomId("searchModal")
@@ -154,19 +140,19 @@ client.on("interactionCreate", async interaction => {
       break;
 
     case "volDown":
-      distube.setVolume(vc, 50);
+      if (!queue) return interaction.reply({ content: "❌ ما في شي يشتغل", ephemeral: true });
+      queue.setVolume(queue.volume - 10);
       interaction.reply({ content: "🔉 قللت الصوت", ephemeral: true });
       break;
 
     case "volUp":
-      distube.setVolume(vc, 100);
+      if (!queue) return interaction.reply({ content: "❌ ما في شي يشتغل", ephemeral: true });
+      queue.setVolume(queue.volume + 10);
       interaction.reply({ content: "🔊 رفعت الصوت", ephemeral: true });
       break;
 
     case "playpause":
-      const queue = distube.getQueue(vc);
-      if (!queue)
-        return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
+      if (!queue) return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
       if (queue.paused) {
         queue.resume();
         interaction.reply({ content: "▶️ تشغيل", ephemeral: true });
@@ -177,22 +163,26 @@ client.on("interactionCreate", async interaction => {
       break;
 
     case "stop":
-      distube.stop(vc);
+      if (!queue) return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
+      queue.stop();
       interaction.reply({ content: "⏹️ أوقفت التشغيل", ephemeral: true });
       break;
 
     case "next":
-      distube.skip(vc);
+      if (!queue) return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
+      queue.skip();
       interaction.reply({ content: "⏭️ تخطيت للأغنية التالية", ephemeral: true });
       break;
 
     case "prev":
-      distube.previous(vc);
+      if (!queue) return interaction.reply({ content: "❌ ما في شي شغال", ephemeral: true });
+      queue.previous();
       interaction.reply({ content: "⏮️ رجعت للأغنية السابقة", ephemeral: true });
       break;
 
     case "leave":
-      distube.voices.get(vc)?.leave();
+      queue?.stop();
+      distube.voices.get(interaction)?.leave();
       interaction.reply({ content: "🚪 خرجت من الروم", ephemeral: true });
       break;
   }
@@ -219,6 +209,15 @@ client.on("interactionCreate", async interaction => {
       ephemeral: true
     });
   }
+});
+
+// ====== أحداث DisTube ======
+distube.on("playSong", (queue, song) => {
+  queue.textChannel?.send(`▶️ شغال: **${song.name}** - \`${song.formattedDuration}\``);
+});
+
+distube.on("addSong", (queue, song) => {
+  queue.textChannel?.send(`➕ أضفت: **${song.name}** - \`${song.formattedDuration}\``);
 });
 
 client.login(TOKEN);
