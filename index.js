@@ -23,7 +23,7 @@ const client = new Client({
 });
 
 // إعداد الروم الصوتي والملف الصامت
-const VOICE_CHANNEL_ID = "1311282768847704064"; // ← غيره حسب الروم
+const VOICE_CHANNEL_ID = "1407816906270048378"; // ← غيره حسب الروم
 const SILENT_AUDIO_FILE = "./silence.mp3";     // ← لازم يكون موجود بنفس المجلد
 
 // خريطة لتخزين voice connections
