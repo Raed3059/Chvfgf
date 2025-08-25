@@ -1,10 +1,4 @@
 
-import { Client, GatewayIntentBits } from 'discord.js';
-import { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior } from '@discordjs/voice';
-import playdl from 'play-dl';
-import dotenv from 'dotenv';
-dotenv.config();
-
 const TOKEN = process.env.DISCORD_TOKEN;
 const VOICE_CHANNEL_ID = '1407816906270048378';
 const GUILD_ID = '1404149751548612722';
@@ -32,18 +26,16 @@ async function connectBot() {
     });
 
     connection.subscribe(player);
-
     playQuran();
 }
 
-async function playQuran() {
-    const stream = await playdl.stream(YOUTUBE_URL);
-    const resource = createAudioResource(stream.stream, { inputType: stream.type });
+function playQuran() {
+    const stream = ytdl(YOUTUBE_URL, { filter: 'audioonly', highWaterMark: 1 << 25 });
+    const resource = createAudioResource(stream);
     player.play(resource);
 
     player.on(AudioPlayerStatus.Idle, () => {
-        // لما يخلص الفيديو يعيد تشغيله تلقائي
-        playQuran();
+        playQuran(); // يعيد التشغيل بعد ما يخلص
     });
 }
 
@@ -54,7 +46,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 });
 
 client.once('ready', () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    console.log(`✅ Logged in as ${client.user.tag}`);
     connectBot();
 });
 
