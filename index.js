@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior } from '@discordjs/voice';
+import ffmpeg from "ffmpeg-static";
 import ytdl from 'ytdl-core';
 import dotenv from 'dotenv';
 dotenv.config();
