@@ -1,3 +1,8 @@
+import { Client, GatewayIntentBits } from 'discord.js';
+import { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior } from '@discordjs/voice';
+import ytdl from 'ytdl-core';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const VOICE_CHANNEL_ID = '1407816906270048378';
