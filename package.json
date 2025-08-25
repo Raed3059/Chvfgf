@@ -1,16 +1,18 @@
 {
-  "name": "discord-music-bot",
+  "name": "quran-voice-bot",
   "version": "1.0.0",
-  "description": "Discord bot with voice channel auto-reconnect and music playback using yt-dlp",
+  "description": "بوت يثبت في الروم الصوتي ويشغل القرآن بشكل متكرر",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js"
   },
+  "author": "Raed Almutairi",
+  "license": "MIT",
   "dependencies": {
-    "@discordjs/voice": "^0.17.0",
-    "discord.js": "^14.16.3",
-    "dotenv": "^16.4.5",
-    "youtube-dl-exec": "^3.0.24"
+    "@discordjs/voice": "^0.16.0",
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.3.0",
+    "fs": "0.0.1-security"
   }
 }
