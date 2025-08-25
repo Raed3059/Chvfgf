@@ -7,7 +7,7 @@ dotenv.config();
 const TOKEN = process.env.DISCORD_TOKEN;
 const VOICE_CHANNEL_ID = '1407816906270048378';
 const GUILD_ID = '1404149751548612722';
-const AUDIO_FILE = './silence.mp3'; // حط مسار ملف القرآن
+const AUDIO_FILE = 'silence.mp3'; // حط مسار ملف القرآن
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
 
